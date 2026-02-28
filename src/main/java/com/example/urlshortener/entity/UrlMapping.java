@@ -1,23 +1,19 @@
 package com.example.urlshortener.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Id;
-
+import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(
         name = "url_mappings",
         indexes = {
-                @Index(name = "idx_short_code", columnList = "short_code", unique = true),
-                @Index(name = "idx_original_url_hash", columnList = "original_url_hash")
+                @Index(name = "idx_short_code", columnList = "shortCode", unique = true),
+                @Index(name = "idx_original_url_hash", columnList = "originalUrlHash")
         }
 )
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
