@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snip — URL Shortener</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+          --bg: #0a0a0f;
+          --surface: #111118;
+          --surface2: #1a1a24;
+          --border: #ffffff0f;
+          --accent: #c8f04a;
+          --accent2: #7c3aed;
+          --text: #f0f0f5;
+          --muted: #6b6b80;
+          --error: #ff4d6d;
+          --success: #c8f04a;
+          --font-display: 'Syne', sans-serif;
+          --font-mono: 'DM Mono', monospace;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+          background: var(--bg);
+          color: var(--text);
+          font-family: var(--font-display);
+          min-height: 100vh;
+          overflow-x: hidden;
+          cursor: default;
+        }
+
+        /* Background grid */
+        body::before {
+          content: '';
+          position: fixed;
+          inset: 0;
+          background-image:
+            linear-gradient(var(--border) 1px, transparent 1px),
+            linear-gradient(90deg, var(--border) 1px, transparent 1px);
+          background-size: 60px 60px;
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        /* Glow blob */
+        body::after {
+          content: '';
+          position: fixed;
+          width: 600px;
+          height: 600px;
+          background: radial-gradient(circle, #7c3aed22 0%, transparent 70%);
+          top: -200px;
+          right: -200px;
+          pointer-events: none;
+          z-index: 0;
+          animation: blobFloat 8s ease-in-out infinite;
+        }
+
+        @keyframes blobFloat {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(-40px, 40px) scale(1.1); }
+        }
+
+        .container {
+          max-width: 720px;
+          margin: 0 auto;
+          padding: 0 24px;
+          position: relative;
+          z-index: 1;
+        }
+
+        /* ── Header ── */
+        header {
+          padding: 48px 0 0;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        .logo {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          text-decoration: none;
+        }
+
+        .logo-icon {
+          width: 36px;
+          height: 36px;
+          background: var(--accent);
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 18px;
+          animation: logoPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes logoPulse {
+          0%, 100% { box-shadow: 0 0 0 0 #c8f04a40; }
+          50% { box-shadow: 0 0 0 8px #c8f04a00; }
+        }
+
+        .logo-text {
+          font-size: 22px;
+          font-weight: 800;
+          color: var(--text);
+          letter-spacing: -0.5px;
+        }
+
+        .logo-text span { color: var(--accent); }
+
+        .badge {
+          font-family: var(--font-mono);
+          font-size: 11px;
+          color: var(--muted);
+          border: 1px solid var(--border);
+          padding: 4px 10px;
+          border-radius: 100px;
+          letter-spacing: 1px;
+        }
+
+        /* ── Hero ── */
+        .hero {
+          padding: 80px 0 48px;
+          text-align: center;
+        }
+
+        .hero-tag {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-family: var(--font-mono);
+          font-size: 12px;
+          color: var(--accent);
+          background: #c8f04a12;
+          border: 1px solid #c8f04a30;
+          padding: 6px 14px;
+          border-radius: 100px;
+          margin-bottom: 28px;
+          letter-spacing: 1px;
+          animation: fadeSlideDown 0.6s ease both;
+        }
+
+        .hero-tag::before {
+          content: '';
+          width: 6px;
+          height: 6px;
+          background: var(--accent);
+          border-radius: 50%;
+          animation: blink 1.5s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
+        }
+
+        h1 {
+          font-size: clamp(42px, 8vw, 72px);
+          font-weight: 800;
+          line-height: 1.0;
+          letter-spacing: -2px;
+          margin-bottom: 20px;
+          animation: fadeSlideDown 0.6s 0.1s ease both;
+        }
+
+        h1 .line2 {
+          color: var(--accent);
+          display: block;
+          position: relative;
+        }
+
+        h1 .line2::after {
+          content: '';
+          position: absolute;
+          bottom: -4px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 60%;
+          height: 3px;
+          background: linear-gradient(90deg, transparent, var(--accent), transparent);
+        }
+
+        .hero-sub {
+          font-family: var(--font-mono);
+          font-size: 14px;
+          color: var(--muted);
+          line-height: 1.8;
+          max-width: 440px;
+          margin: 0 auto;
+          animation: fadeSlideDown 0.6s 0.2s ease both;
+        }
+
+        @keyframes fadeSlideDown {
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Card ── */
+        .card {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          padding: 32px;
+          margin-bottom: 24px;
+          animation: fadeSlideUp 0.6s 0.3s ease both;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, #c8f04a40, transparent);
+        }
+
+        @keyframes fadeSlideUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card-title {
+          font-size: 11px;
+          font-family: var(--font-mono);
+          color: var(--muted);
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          margin-bottom: 20px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .card-title::before {
+          content: '';
+          width: 16px;
+          height: 1px;
+          background: var(--muted);
+        }
+
+        /* ── Form ── */
+        .field {
+          margin-bottom: 16px;
+        }
+
+        label {
+          display: block;
+          font-size: 12px;
+          font-family: var(--font-mono);
+          color: var(--muted);
+          margin-bottom: 8px;
+          letter-spacing: 0.5px;
+        }
+
+        input {
+          width: 100%;
+          background: var(--surface2);
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          padding: 14px 16px;
+          font-family: var(--font-mono);
+          font-size: 14px;
+          color: var(--text);
+          outline: none;
+          transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input::placeholder { color: var(--muted); }
+
+        input:focus {
+          border-color: #c8f04a50;
+          box-shadow: 0 0 0 3px #c8f04a12;
+        }
+
+        input.error {
+          border-color: var(--error);
+          box-shadow: 0 0 0 3px #ff4d6d12;
+        }
+
+        .field-error {
+          font-family: var(--font-mono);
+          font-size: 11px;
+          color: var(--error);
+          margin-top: 6px;
+          display: none;
+        }
+
+        .field-error.show { display: block; }
+
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+        @media (max-width: 500px) { .row { grid-template-columns: 1fr; } }
+
+        /* ── Button ── */
+        .btn {
+          width: 100%;
+          padding: 16px;
+          background: var(--accent);
+          color: #0a0a0f;
+          border: none;
+          border-radius: 10px;
+          font-family: var(--font-display);
+          font-size: 15px;
+          font-weight: 700;
+          cursor: pointer;
+          letter-spacing: 0.3px;
+          transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+          position: relative;
+          overflow: hidden;
+          margin-top: 8px;
+        }
+
+        .btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 30px #c8f04a30;
+        }
+
+        .btn:active { transform: translateY(0); }
+
+        .btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          transform: none;
+          box-shadow: none;
+        }
+
+        .btn .btn-text { transition: opacity 0.2s; }
+        .btn .btn-loader { display: none; }
+
+        .btn.loading .btn-text { display: none; }
+        .btn.loading .btn-loader {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+        }
+
+        .dot {
+          width: 6px;
+          height: 6px;
+          background: #0a0a0f;
+          border-radius: 50%;
+          animation: dotBounce 0.8s ease-in-out infinite;
+        }
+        .dot:nth-child(2) { animation-delay: 0.15s; }
+        .dot:nth-child(3) { animation-delay: 0.3s; }
+
+        @keyframes dotBounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-5px); }
+        }
+
+        /* ── Result ── */
+        .result {
+          display: none;
+          background: var(--surface);
+          border: 1px solid #c8f04a25;
+          border-radius: 20px;
+          padding: 28px 32px;
+          animation: resultPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .result::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, var(--accent), transparent);
+        }
+
+        .result.show { display: block; }
+
+        @keyframes resultPop {
+          from { opacity: 0; transform: scale(0.95) translateY(10px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .result-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 20px;
+        }
+
+        .result-icon {
+          width: 32px;
+          height: 32px;
+          background: #c8f04a20;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 16px;
+        }
+
+        .result-title {
+          font-size: 14px;
+          font-weight: 700;
+          color: var(--accent);
+        }
+
+        .result-subtitle {
+          font-family: var(--font-mono);
+          font-size: 11px;
+          color: var(--muted);
+        }
+
+        .short-url-box {
+          background: var(--surface2);
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          padding: 16px 20px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+
+        .short-url-text {
+          font-family: var(--font-mono);
+          font-size: 15px;
+          font-weight: 500;
+          color: var(--accent);
+          word-break: break-all;
+        }
+
+        .copy-btn {
+          flex-shrink: 0;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          padding: 8px 14px;
+          font-family: var(--font-mono);
+          font-size: 12px;
+          color: var(--text);
+          cursor: pointer;
+          transition: all 0.2s;
+          white-space: nowrap;
+        }
+
+        .copy-btn:hover {
+          background: var(--accent);
+          color: #0a0a0f;
+          border-color: var(--accent);
+        }
+
+        .copy-btn.copied {
+          background: #c8f04a20;
+          color: var(--accent);
+          border-color: #c8f04a40;
+        }
+
+        .meta-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+
+        @media (max-width: 500px) { .meta-grid { grid-template-columns: 1fr; } }
+
+        .meta-item {
+          background: var(--surface2);
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          padding: 12px 16px;
+        }
+
+        .meta-label {
+          font-family: var(--font-mono);
+          font-size: 10px;
+          color: var(--muted);
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          margin-bottom: 4px;
+        }
+
+        .meta-value {
+          font-family: var(--font-mono);
+          font-size: 13px;
+          color: var(--text);
+          word-break: break-all;
+        }
+
+        /* ── Error toast ── */
+        .toast {
+          position: fixed;
+          bottom: 32px;
+          right: 32px;
+          background: #1a0a10;
+          border: 1px solid #ff4d6d40;
+          border-radius: 12px;
+          padding: 14px 20px;
+          font-family: var(--font-mono);
+          font-size: 13px;
+          color: var(--error);
+          max-width: 340px;
+          z-index: 100;
+          transform: translateY(20px);
+          opacity: 0;
+          transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .toast.show {
+          transform: translateY(0);
+          opacity: 1;
+        }
+
+        /* ── Resolve section ── */
+        .divider {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          margin: 32px 0;
+          animation: fadeSlideUp 0.6s 0.4s ease both;
+        }
+
+        .divider::before, .divider::after {
+          content: '';
+          flex: 1;
+          height: 1px;
+          background: var(--border);
+        }
+
+        .divider-text {
+          font-family: var(--font-mono);
+          font-size: 11px;
+          color: var(--muted);
+          letter-spacing: 2px;
+          text-transform: uppercase;
+        }
+
+        /* ── Resolve result ── */
+        .resolve-result {
+          display: none;
+          margin-top: 16px;
+        }
+        .resolve-result.show { display: block; animation: resultPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+        .resolve-url {
+          background: var(--surface2);
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          padding: 16px 20px;
+          font-family: var(--font-mono);
+          font-size: 13px;
+          color: var(--text);
+          word-break: break-all;
+          line-height: 1.6;
+        }
+
+        .resolve-url a {
+          color: var(--accent);
+          text-decoration: none;
+        }
+
+        .resolve-url a:hover { text-decoration: underline; }
+
+        .expires-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-family: var(--font-mono);
+          font-size: 11px;
+          margin-top: 10px;
+          padding: 5px 12px;
+          border-radius: 100px;
+          border: 1px solid #c8f04a30;
+          color: var(--accent);
+          background: #c8f04a0a;
+        }
+
+        /* ── Stats bar ── */
+        .stats {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+          margin: 32px 0;
+          animation: fadeSlideUp 0.6s 0.5s ease both;
+        }
+
+        .stat {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 14px;
+          padding: 20px;
+          text-align: center;
+        }
+
+        .stat-num {
+          font-size: 28px;
+          font-weight: 800;
+          color: var(--accent);
+          line-height: 1;
+          margin-bottom: 4px;
+        }
+
+        .stat-label {
+          font-family: var(--font-mono);
+          font-size: 11px;
+          color: var(--muted);
+          letter-spacing: 1px;
+        }
+
+        /* ── Footer ── */
+        footer {
+          text-align: center;
+          padding: 40px 0 48px;
+          font-family: var(--font-mono);
+          font-size: 12px;
+          color: var(--muted);
+          animation: fadeSlideUp 0.6s 0.6s ease both;
+        }
+
+        footer span { color: var(--accent); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <header>
+        <a class="logo" href="#">
+            <div class="logo-icon">✂</div>
+            <span class="logo-text">sn<span>ip</span></span>
+        </a>
+        <div class="badge">v1.0 · REST API</div>
+    </header>
+
+    <section class="hero">
+        <div class="hero-tag">URL SHORTENER SERVICE</div>
+        <h1>Make it short.<br><span class="line2">Make it sharp.</span></h1>
+        <p class="hero-sub">Paste any long URL, set an expiry, and get a clean short link instantly. No tracking. No fluff.</p>
+    </section>
+
+    <!-- Shorten Form -->
+    <div class="card">
+        <div class="card-title">Create Short Link</div>
+
+        <div class="field">
+            <label>ORIGINAL URL</label>
+            <input type="url" id="originalUrl" placeholder="https://your-very-long-url.com/goes/here" />
+            <div class="field-error" id="urlError">Please enter a valid URL starting with http:// or https://</div>
+        </div>
+
+        <div class="field">
+            <label>EXPIRY DATE & TIME</label>
+            <input type="datetime-local" id="validity" />
+            <div class="field-error" id="validityError">Expiry must be a future date and time</div>
+        </div>
+
+        <button class="btn" id="shortenBtn" onclick="shortenUrl()">
+            <span class="btn-text">✂ &nbsp;Shorten URL</span>
+            <span class="btn-loader">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </span>
+        </button>
+    </div>
+
+    <!-- Result -->
+    <div class="result" id="result">
+        <div class="result-header">
+            <div class="result-icon">✓</div>
+            <div>
+                <div class="result-title">Link Created Successfully</div>
+                <div class="result-subtitle">Your short URL is ready to share</div>
+            </div>
+        </div>
+
+        <div class="short-url-box">
+            <div class="short-url-text" id="resultShortUrl"></div>
+            <button class="copy-btn" id="copyBtn" onclick="copyUrl()">Copy</button>
+        </div>
+
+        <div class="meta-grid">
+            <div class="meta-item">
+                <div class="meta-label">Original URL</div>
+                <div class="meta-value" id="resultOriginalUrl"></div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-label">Expires At</div>
+                <div class="meta-value" id="resultExpiresAt"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="divider">
+        <span class="divider-text">or resolve</span>
+    </div>
+
+    <!-- Resolve Form -->
+    <div class="card" style="animation-delay: 0.4s">
+        <div class="card-title">Resolve Short Code</div>
+
+        <div class="field">
+            <label>SHORT CODE OR FULL SHORT URL</label>
+            <input type="text" id="shortCode" placeholder="aB9xQ1  or  http://localhost:8080/r/aB9xQ1" maxlength="100" />
+            <div class="field-error" id="codeError">Please enter a valid short code (max 10 chars)</div>
+        </div>
+
+        <button class="btn" id="resolveBtn" onclick="resolveUrl()" style="background: var(--surface2); color: var(--text); border: 1px solid var(--border);">
+            <span class="btn-text">↗ &nbsp;Lookup URL</span>
+            <span class="btn-loader">
+        <span class="dot" style="background: var(--text)"></span>
+        <span class="dot" style="background: var(--text)"></span>
+        <span class="dot" style="background: var(--text)"></span>
+      </span>
+        </button>
+
+        <div class="resolve-result" id="resolveResult">
+            <div class="resolve-url">
+                <div style="font-size:10px; color: var(--muted); letter-spacing:1px; margin-bottom:6px;">ORIGINAL URL</div>
+                <a id="resolvedUrl" href="#" target="_blank"></a>
+            </div>
+            <div class="expires-badge">⏱ Expires: <span id="resolvedExpiry"></span></div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+        <div class="stat">
+            <div class="stat-num">10</div>
+            <div class="stat-label">Max Chars</div>
+        </div>
+        <div class="stat">
+            <div class="stat-num">62⁶</div>
+            <div class="stat-label">Combinations</div>
+        </div>
+        <div class="stat">
+            <div class="stat-num">∞</div>
+            <div class="stat-label">URLs Supported</div>
+        </div>
+    </div>
+
+    <footer>
+        Built with Spring Boot + PostgreSQL &nbsp;·&nbsp; <span>snip</span> url shortener
+    </footer>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+    <span>⚠</span>
+    <span id="toastMsg"></span>
+</div>
+
+<script>
+    const API_BASE = 'http://localhost:8080';
+
+    // Set min datetime to now
+    const dtInput = document.getElementById('validity');
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    dtInput.min = now.toISOString().slice(0, 16);
+    // Default to 7 days from now
+    const defaultExpiry = new Date();
+    defaultExpiry.setDate(defaultExpiry.getDate() + 7);
+    defaultExpiry.setMinutes(defaultExpiry.getMinutes() - defaultExpiry.getTimezoneOffset());
+    dtInput.value = defaultExpiry.toISOString().slice(0, 16);
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 4000);
+    }
+
+    function setLoading(btnId, loading) {
+      const btn = document.getElementById(btnId);
+      btn.disabled = loading;
+      btn.classList.toggle('loading', loading);
+    }
+
+    function formatDate(dateStr) {
+      return new Date(dateStr).toLocaleString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+    }
+
+    async function shortenUrl() {
+      const urlInput = document.getElementById('originalUrl');
+      const validityInput = document.getElementById('validity');
+      let valid = true;
+
+      // Validate URL
+      document.getElementById('urlError').classList.remove('show');
+      urlInput.classList.remove('error');
+      try {
+        const u = new URL(urlInput.value.trim());
+        if (!['http:', 'https:'].includes(u.protocol)) throw new Error();
+      } catch {
+        document.getElementById('urlError').classList.add('show');
+        urlInput.classList.add('error');
+        valid = false;
+      }
+
+      // Validate validity
+      document.getElementById('validityError').classList.remove('show');
+      validityInput.classList.remove('error');
+      if (!validityInput.value || new Date(validityInput.value) <= new Date()) {
+        document.getElementById('validityError').classList.add('show');
+        validityInput.classList.add('error');
+        valid = false;
+      }
+
+      if (!valid) return;
+
+      setLoading('shortenBtn', true);
+      document.getElementById('result').classList.remove('show');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/shorten`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            originalUrl: urlInput.value.trim(),
+            validity: validityInput.value + ':00'
+          })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          const msg = data.message || data.error || 'Something went wrong';
+          showToast(msg);
+          return;
+        }
+
+        document.getElementById('resultShortUrl').textContent = data.shortUrl;
+        document.getElementById('resultOriginalUrl').textContent =
+          data.originalUrl.length > 50 ? data.originalUrl.slice(0, 50) + '...' : data.originalUrl;
+        document.getElementById('resultExpiresAt').textContent = formatDate(data.expiresAt);
+        document.getElementById('result').classList.add('show');
+        document.getElementById('copyBtn').textContent = 'Copy';
+        document.getElementById('copyBtn').classList.remove('copied');
+
+      } catch (e) {
+        showToast('Cannot connect to API. Make sure the server is running on localhost:8080');
+      } finally {
+        setLoading('shortenBtn', false);
+      }
+    }
+
+    async function resolveUrl() {
+      const input = document.getElementById('shortCode');
+      const codeError = document.getElementById('codeError');
+      codeError.classList.remove('show');
+      input.classList.remove('error');
+
+      let code = input.value.trim();
+      // Extract code from full URL if pasted
+      if (code.includes('/r/')) {
+        code = code.split('/r/').pop().split('/')[0];
+      }
+
+      if (!code || code.length > 10) {
+        codeError.classList.add('show');
+        input.classList.add('error');
+        return;
+      }
+
+      setLoading('resolveBtn', true);
+      document.getElementById('resolveResult').classList.remove('show');
+
+      try {
+        const res = await fetch(`${API_BASE}/r/${code}`, {
+          headers: { 'Accept': 'application/json' }
+        });
+
+        const data = await res.json();
+
+        if (res.status === 410) {
+          showToast('⏰ This URL has expired and is no longer accessible.');
+          return;
+        }
+
+        if (!res.ok) {
+          showToast(data.message || 'Short URL not found.');
+          return;
+        }
+
+        const urlEl = document.getElementById('resolvedUrl');
+        urlEl.href = data.originalUrl;
+        urlEl.textContent = data.originalUrl;
+        document.getElementById('resolvedExpiry').textContent = formatDate(data.expiresAt);
+        document.getElementById('resolveResult').classList.add('show');
+
+      } catch (e) {
+        showToast('Cannot connect to API. Make sure the server is running on localhost:8080');
+      } finally {
+        setLoading('resolveBtn', false);
+      }
+    }
+
+    function copyUrl() {
+      const url = document.getElementById('resultShortUrl').textContent;
+      navigator.clipboard.writeText(url).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+    }
+
+    // Enter key support
+    document.getElementById('originalUrl').addEventListener('keydown', e => { if (e.key === 'Enter') shortenUrl(); });
+    document.getElementById('validity').addEventListener('keydown', e => { if (e.key === 'Enter') shortenUrl(); });
+    document.getElementById('shortCode').addEventListener('keydown', e => { if (e.key === 'Enter') resolveUrl(); });
+</script>
+</body>
+</html>
