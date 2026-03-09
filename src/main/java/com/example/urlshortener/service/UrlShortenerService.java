@@ -44,18 +44,19 @@ public class UrlShortenerService {
         String originalUrl = request.getOriginalUrl().trim();
         LocalDateTime expiresAt = request.getValidity();
 
-
         String urlHash = sha256(originalUrl);
 
-
-        Optional<UrlMapping> existingOpt = repository.findActiveByOriginalUrlHash(urlHash, LocalDateTime.now());
+        // If same URL exists → update expiry and return existing short code
+        Optional<UrlMapping> existingOpt = repository.findByOriginalUrlHash(urlHash);
         if (existingOpt.isPresent()) {
-            UrlMapping existing = existingOpt.get();
-            log.info("Returning existing short code for duplicate URL: {}", existing.getShortCode());
-            return buildShortenResponse(existing);
+            repository.updateExpiryByHash(urlHash, expiresAt);  // ← update expiry
+            UrlMapping updated = existingOpt.get();
+            updated.setExpiresAt(expiresAt);  // reflect in response
+            log.info("Updated expiry for existing short code '{}' to {}", updated.getShortCode(), expiresAt);
+            return buildShortenResponse(updated);
         }
 
-
+        // New URL → generate short code and save
         String shortCode = generateUniqueShortCode();
 
         UrlMapping mapping = UrlMapping.builder()
